@@ -1,5 +1,6 @@
 from fastapi import Depends
 from fastapi import FastAPI
+from fastapi import Form
 from fastapi import Request
 from fastapi import Response
 from fastapi import UploadFile
@@ -20,21 +21,23 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 def get_index(request: Request) -> Response:
-    return Response(
-        content=f"""
-            <h1>Работает!</h1>
-            <p>теперь загляни в <pre>{__name__.replace(".", "/")}.py</pre></p>
-            <!-- а этот код можно удалить -->
-        """,
-        media_type="text/html",
-    )
-    # return templates.TemplateResponse(request, "index.html")
+    # return Response(
+    #     content=f"""
+    #         <h1>Работает!</h1>
+    #         <p>теперь загляни в <pre>{__name__.replace(".", "/")}.py</pre></p>
+    #         <!-- а этот код можно удалить -->
+    #     """,
+    #     media_type="text/html",
+    # )
+    ctx = {}
+    return templates.TemplateResponse(request, "index.html", ctx)
 
 
 @app.post("/", response_class=HTMLResponse)
 def infer_model(
     file: UploadFile,
     request: Request,
+    threshold: float = Form(0.5),
     model: Reader = Depends(get_model, use_cache=True),
 ) -> Response:
     ctx: dict = {}
@@ -45,18 +48,19 @@ def infer_model(
         for coords, word, accuracy in model.readtext(image):
             draw.highlight_word(coords, word)
             cropped_word_image = draw.crop(coords)
-            words.append(
-                {
-                    "image": image_to_img_src(cropped_word_image),
-                    "word": word,
-                    "accuracy": accuracy,
-                }
-            )
+            if accuracy >= threshold:
+                words.append(
+                    {
+                        "image": image_to_img_src(cropped_word_image),
+                        "word": word,
+                        "accuracy": accuracy,
+                    }
+                )
         highlighted_image = draw.get_highlighted_image()
         ctx.update(
             image=image_to_img_src(highlighted_image),
             words=words,
         )
     except Exception as err:
-        ctx.update(error=str(err))
+        ctx.update(error=err)
     return templates.TemplateResponse(request, "index.html", ctx)
