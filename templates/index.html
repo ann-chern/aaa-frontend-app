@@ -18,18 +18,78 @@
       </div>
     </nav>
 
-    <!-- этот блок можно удалять -->
-    <div class="container">
-      <p class="text-center">
-        Шаблон подключился! Теперь на его базе можно начинать делать веб
-        приложение.
-      </p>
-      <p class="text-center">
-        Удали этот блок и скопируй сюда содержимое тега <code>body</code> из
-        домашнего задания с занятия 2.
-      </p>
+    
+    <div class="container mt-4"> 
+        {% if not words and not error and not image %}
+        <h1 class="text-center mb-4">Распознаватель знаков с изображения</h1>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger text-center" role="alert">
+          <strong>{{ error.__class__.__name__ }}</strong><br>   
+          {{ error }}
+        </div>
+        {% endif %}
+
+
+        {% if image %}
+        <div class="text-center mb-4">
+            <img src="{{ image }}" 
+                class="img-fluid rounded shadow" 
+                alt="Изображение для обработки">
+        </div>
+        {% endif %}
+
+        <form class="mb-4 p-3 border rounded bg-light" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="fileUpload" class="form-label">Загрузите изображение для распознавания</label>
+                <input class="form-control" type="file" id="fileUpload" name="file" accept="image/*">
+                <div class="form-text">Поддерживаются различные форматы изображений</div>
+            </div>
+            <div class="mb-3">
+                <label for="threshold" class="form-label">Минимальная точность (от 0 до 1)</label>
+                <input type="number" 
+                      id="threshold" 
+                      name="threshold" 
+                      class="form-control" 
+                      min="0" 
+                      max="1" 
+                      step="0.01" 
+                      value="0.5">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Распознать</button>
+        </form>
+
+        {% if words %}
+        <h2 class="h4 text-center mb-3">Результат распознавания</h2>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Слово</th>
+                    <th scope="col">Точность</th>
+                    <th scope="col">Изображение</th>
+                </tr>
+            </thead>
+            <tbody>
+              {%for word in words%}  
+              <tr>
+                  <td>{{ loop.index }}</td>    
+                  <td>{{ word.word }}</td>
+                  <td class="{% if word.accuracy > 0.95 %}table-success{% endif %}">
+                    {{ "%.2f" | format(word.accuracy * 100) }}%
+                  </td>
+                  <td><img src="{{ word.image }}"></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+
     </div>
-    <!-- блок выше можно удалять -->
 
     <footer class="container mt-5">
       <p class="text-center text-muted">© 2025 Академия Аналитиков Авито</p>
